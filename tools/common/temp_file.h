@@ -102,7 +102,35 @@ class TempDirectory {
     std::filesystem::path temporary{std::filesystem::temp_directory_path(ec) /
                                     path_template};
     if (ec) return nullptr;
+    return CreateAtPath(temporary);
+  }
 
+  // Like `Create`, but places the directory inside `parent_dir` rather than
+  // the system temp directory. Useful when the resulting path needs to be
+  // relative to the current working directory (e.g. to stay inside a Bazel
+  // sandbox).
+  static std::unique_ptr<TempDirectory> CreateIn(
+      const std::filesystem::path& parent_dir,
+      const std::string& path_template) {
+    std::error_code ec;
+    std::filesystem::create_directories(parent_dir, ec);
+    if (ec) return nullptr;
+    return CreateAtPath(parent_dir / path_template);
+  }
+
+  ~TempDirectory() {
+    std::error_code ec;
+    std::filesystem::remove_all(path_, ec);
+  }
+
+  // Gets the path to the temporary directory.
+  std::string GetPath() const { return path_; }
+
+ private:
+  explicit TempDirectory(const std::string& path) : path_(path) {}
+
+  static std::unique_ptr<TempDirectory> CreateAtPath(
+      const std::filesystem::path& temporary) {
     std::string path = temporary.string();
 
 #if defined(_WIN32)
@@ -136,17 +164,6 @@ class TempDirectory {
 
     return std::unique_ptr<TempDirectory>(new TempDirectory(path));
   }
-
-  ~TempDirectory() {
-    std::error_code ec;
-    std::filesystem::remove_all(path_, ec);
-  }
-
-  // Gets the path to the temporary directory.
-  std::string GetPath() const { return path_; }
-
- private:
-  explicit TempDirectory(const std::string& path) : path_(path) {}
 
   std::string path_;
 };
