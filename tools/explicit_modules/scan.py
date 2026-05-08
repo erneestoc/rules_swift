@@ -380,13 +380,19 @@ def _parse_output(
 
         module.module_map_path = module.module_map_path or module_map_path
         if module_type == "swift":
-            has_prebuilt_swiftmodule = bool(details.get("compiledModuleCandidates", []))
-            if not has_prebuilt_swiftmodule:
+            # Even when the SDK ships a prebuilt .swiftmodule (e.g. SwiftUI
+            # cross-import overlays like _MapKit_SwiftUI), we still register
+            # the .swiftinterface so the module is exposed as a real Swift
+            # module — otherwise it renders as a `system_module_group` and is
+            # missing from the explicit module map, breaking imports of
+            # cross-imported APIs (Map, MapMarker, etc.).
+            interface_path = details.get("moduleInterfacePath")
+            if interface_path:
                 module.set_swiftinterface(
                     cpu=cpu,
                     is_framework=bool(details.get("isFramework", False)),
                     swiftinterface_path=_normalize_system_path(
-                        details["moduleInterfacePath"],
+                        interface_path,
                         developer_dir=developer_dir,
                         sdkroot=sdkroot,
                     ),
