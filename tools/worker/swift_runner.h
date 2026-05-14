@@ -203,6 +203,9 @@ class SwiftRunner {
   // stripping `<M>.<M>X` qualifiers that fail to resolve under Swift 6.3
   // when `<M>` names both an imported module and a class within it.
   bool fix_dotted_self_qualifier_lookup_;
+
+  // Whether `-v` was passed.
+  bool verbose_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_SWIFT_RUNNER_H_
